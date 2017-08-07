@@ -30,17 +30,16 @@
 
 from __future__ import division, print_function, absolute_import
 
-import warnings
 import math
 import sys
-from unittest import expectedFailure
 
 import numpy
 from numpy import fft
 from numpy.testing import (assert_, assert_equal, assert_array_equal,
-        run_module_suite, assert_array_almost_equal, assert_almost_equal, dec)
+        assert_array_almost_equal, assert_almost_equal)
+import pytest
+from scipy._lib._numpy_compat import suppress_warnings
 import scipy.ndimage as ndimage
-from nose import SkipTest
 
 
 eps = 1e-12
@@ -51,7 +50,7 @@ def sumsq(a, b):
 
 
 class TestNdimage:
-    def setUp(self):
+    def setup_method(self):
         # list of numarray data types
         self.integer_types = [numpy.int8, numpy.uint8, numpy.int16,
                 numpy.uint16, numpy.int32, numpy.uint32,
@@ -63,14 +62,6 @@ class TestNdimage:
 
         # list of boundary modes:
         self.modes = ['nearest', 'wrap', 'reflect', 'mirror', 'constant']
-
-        # Fail on warnings.
-        self.saved_warning_settings = warnings.catch_warnings()
-        self.saved_warning_settings.__enter__()
-        warnings.simplefilter("error")
-
-    def tearDown(self):
-        self.saved_warning_settings.__exit__()
 
     def test_correlate01(self):
         array = numpy.array([1, 2])
@@ -1746,8 +1737,8 @@ class TestNdimage:
             result = out if returned is None else returned
             assert_array_almost_equal(result, expected)
 
-    # do not run on 32 bit or windows (no sparse memory)
-    @dec.skipif('win32' in sys.platform or numpy.intp(0).itemsize < 8)
+    @pytest.mark.skipif('win32' in sys.platform or numpy.intp(0).itemsize < 8,
+                        reason="do not run on 32 bit or windows (no sparse memory)")
     def test_map_coordinates_large_data(self):
         # check crash on large data
         try:
@@ -1757,7 +1748,7 @@ class TestNdimage:
             a[n - 3:,n - 3:] = 0
             ndimage.map_coordinates(a, [[n - 1.5], [n - 1.5]], order=1)
         except MemoryError:
-            raise SkipTest("Not enough memory available")
+            raise pytest.skip("Not enough memory available")
 
     def test_affine_transform01(self):
         data = numpy.array([1])
@@ -1987,10 +1978,10 @@ class TestNdimage:
         # consistency between diagonal and non-diagonal case; see issue #1547
         data = numpy.array([4, 1, 3, 2])
         for order in range(0, 6):
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", UserWarning)
-                out1 = ndimage.affine_transform(data, [2], -1,
-                                                    order=order)
+            with suppress_warnings() as sup:
+                sup.filter(UserWarning,
+                           "The behaviour of affine_transform with a one-dimensional array .* has changed")
+                out1 = ndimage.affine_transform(data, [2], -1, order=order)
             out2 = ndimage.affine_transform(data, [[2]], -1,
                                                 order=order)
             assert_array_almost_equal(out1, out2)
@@ -1999,10 +1990,10 @@ class TestNdimage:
         # consistency between diagonal and non-diagonal case; see issue #1547
         data = numpy.array([4, 1, 3, 2])
         for order in range(0, 6):
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", UserWarning)
-                out1 = ndimage.affine_transform(data, [0.5], -1,
-                                                    order=order)
+            with suppress_warnings() as sup:
+                sup.filter(UserWarning,
+                           "The behaviour of affine_transform with a one-dimensional array .* has changed")
+                out1 = ndimage.affine_transform(data, [0.5], -1, order=order)
             out2 = ndimage.affine_transform(data, [[0.5]], -1,
                                                 order=order)
             assert_array_almost_equal(out1, out2)
@@ -2050,8 +2041,9 @@ class TestNdimage:
         for out in [numpy.empty_like(data),
                     numpy.empty_like(data).astype(data.dtype.newbyteorder()),
                     data.dtype, data.dtype.newbyteorder()]:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", UserWarning)
+            with suppress_warnings() as sup:
+                sup.filter(UserWarning,
+                           "The behaviour of affine_transform with a one-dimensional array .* has changed")
                 returned = ndimage.affine_transform(data, [1, 1], output=out)
             result = out if returned is None else returned
             assert_array_almost_equal(result, [[1, 1], [1, 1]])
@@ -2177,10 +2169,11 @@ class TestNdimage:
                 [5, 6, 7, 8],
                 [9, 10, 11, 12]]
         for order in range(0, 6):
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", UserWarning)
+            with suppress_warnings() as sup:
+                sup.filter(UserWarning,
+                           "The behaviour of affine_transform with a one-dimensional array .* has changed")
                 out = ndimage.affine_transform(data, [0.5, 0.5], 0,
-                                                        (6, 8), order=order)
+                                               (6, 8), order=order)
             assert_array_almost_equal(out[::2, ::2], data)
 
     def test_zoom_infinity(self):
@@ -2200,10 +2193,11 @@ class TestNdimage:
     def test_zoom_output_shape_roundoff(self):
         arr = numpy.zeros((3, 11, 25))
         zoom = (4.0 / 3, 15.0 / 11, 29.0 / 25)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", UserWarning)
+        with suppress_warnings() as sup:
+            sup.filter(UserWarning,
+                       "From scipy 0.13.0, the output shape of zoom.. is calculated with round.. instead of int")
             out = ndimage.zoom(arr, zoom)
-            assert_array_equal(out.shape, (4, 15, 29))
+        assert_array_equal(out.shape, (4, 15, 29))
 
     def test_rotate01(self):
         data = numpy.array([[0, 0, 0, 0],
@@ -4596,7 +4590,7 @@ class TestNdimage:
 
 class TestDilateFix:
 
-    def setUp(self):
+    def setup_method(self):
         # dilation related setup
         self.array = numpy.array([[0, 0, 0, 0, 0,],
                                   [0, 0, 0, 0, 0,],
@@ -4617,6 +4611,3 @@ class TestDilateFix:
         result = ndimage.grey_dilation(self.array, size=3)
         assert_array_almost_equal(result, self.dilated3x3)
 
-
-if __name__ == "__main__":
-    run_module_suite()

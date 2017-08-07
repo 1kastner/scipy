@@ -161,6 +161,62 @@ add_newdoc("scipy.special", "wrightomega",
 
     """)
 
+
+add_newdoc("scipy.special", "agm",
+    """
+    agm(a, b)
+
+    Compute the arithmetic-geometric mean of `a` and `b`.
+
+    Start with a_0 = a and b_0 = b and iteratively compute::
+
+        a_{n+1} = (a_n + b_n)/2
+        b_{n+1} = sqrt(a_n*b_n)
+
+    a_n and b_n converge to the same limit as n increases; their common
+    limit is agm(a, b).
+
+    Parameters
+    ----------
+    a, b : array_like
+        Real values only.  If the values are both negative, the result
+        is negative.  If one value is negative and the other is positive,
+        `nan` is returned.
+
+    Returns
+    -------
+    float
+        The arithmetic-geometric mean of `a` and `b`.
+
+    Examples
+    --------
+    >>> from scipy.special import agm
+    >>> a, b = 24.0, 6.0
+    >>> agm(a, b)
+    13.458171481725614
+
+    Compare that result to the iteration:
+
+    >>> while a != b:
+    ...     a, b = (a + b)/2, np.sqrt(a*b)
+    ...     print("a = %19.16f  b=%19.16f" % (a, b))
+    ...
+    a = 15.0000000000000000  b=12.0000000000000000
+    a = 13.5000000000000000  b=13.4164078649987388
+    a = 13.4582039324993694  b=13.4581390309909850
+    a = 13.4581714817451772  b=13.4581714817060547
+    a = 13.4581714817256159  b=13.4581714817256159
+
+    When array-like arguments are given, broadcasting applies:
+
+    >>> a = np.array([[1.5], [3], [6]])  # a has shape (3, 1).
+    >>> b = np.array([6, 12, 24, 48])    # b has shape (4,).
+    >>> agm(a, b)
+    array([[  3.36454287,   5.42363427,   9.05798751,  15.53650756],
+           [  4.37037309,   6.72908574,  10.84726853,  18.11597502],
+           [  6.        ,   8.74074619,  13.45817148,  21.69453707]])
+    """)
+
 add_newdoc("scipy.special", "airy",
     r"""
     airy(z)
@@ -966,7 +1022,27 @@ add_newdoc("scipy.special", "cbrt",
     """
     cbrt(x)
 
-    Cube root of `x`
+    Element-wise cube root of `x`.
+
+    Parameters
+    ----------
+    x : array_like
+        `x` must contain real numbers.
+
+    Returns
+    -------
+    float
+        The cube root of each value in `x`.
+
+    Examples
+    --------
+    >>> from scipy.special import cbrt
+
+    >>> cbrt(8)
+    2.0
+    >>> cbrt([-8, -3, 0.125, 1.331])
+    array([-2.        , -1.44224957,  0.5       ,  1.1       ])
+
     """)
 
 add_newdoc("scipy.special", "chdtr",
@@ -2122,14 +2198,57 @@ add_newdoc("scipy.special", "exp10",
     """
     exp10(x)
 
-    10**x
+    Compute ``10**x`` element-wise.
+
+    Parameters
+    ----------
+    x : array_like
+        `x` must contain real numbers.
+
+    Returns
+    -------
+    float
+        ``10**x``, computed element-wise.
+
+    Examples
+    --------
+    >>> from scipy.special import exp10
+
+    >>> exp10(3)
+    1000.0
+    >>> x = np.array([[-1, -0.5, 0], [0.5, 1, 1.5]])
+    >>> exp10(x)
+    array([[  0.1       ,   0.31622777,   1.        ],
+           [  3.16227766,  10.        ,  31.6227766 ]])
+
     """)
 
 add_newdoc("scipy.special", "exp2",
     """
     exp2(x)
 
-    2**x
+    Compute ``2**x`` element-wise.
+
+    Parameters
+    ----------
+    x : array_like
+        `x` must contain real numbers.
+
+    Returns
+    -------
+    float
+        ``2**x``, computed element-wise.
+
+    Examples
+    --------
+    >>> from scipy.special import exp2
+
+    >>> exp2(3)
+    8.0
+    >>> x = np.array([[-1, -0.5, 0], [0.5, 1, 1.5]])
+    >>> exp2(x)
+    array([[ 0.5       ,  0.70710678,  1.        ],
+           [ 1.41421356,  2.        ,  2.82842712]])
     """)
 
 add_newdoc("scipy.special", "expi",
@@ -2207,7 +2326,47 @@ add_newdoc("scipy.special", "expm1",
     """
     expm1(x)
 
-    exp(x) - 1 for use when `x` is near zero.
+    Compute ``exp(x) - 1``.
+
+    When `x` is near zero, ``exp(x)`` is near 1, so the numerical calculation
+    of ``exp(x) - 1`` can suffer from catastrophic loss of precision.
+    ``expm1(x)`` is implemented to avoid the loss of precision that occurs when
+    `x` is near zero.
+
+    Parameters
+    ----------
+    x : array_like
+        `x` must contain real numbers.
+
+    Returns
+    -------
+    float
+        ``exp(x) - 1`` computed element-wise.
+
+    Examples
+    --------
+    >>> from scipy.special import expm1
+
+    >>> expm1(1.0)
+    1.7182818284590451
+    >>> expm1([-0.2, -0.1, 0, 0.1, 0.2])
+    array([-0.18126925, -0.09516258,  0.        ,  0.10517092,  0.22140276])
+
+    The exact value of ``exp(7.5e-13) - 1`` is::
+
+        7.5000000000028125000000007031250000001318...*10**-13.
+
+    Here is what ``expm1(7.5e-13)`` gives:
+
+    >>> expm1(7.5e-13)
+    7.5000000000028135e-13
+
+    Compare that to ``exp(7.5e-13) - 1``, where the subtraction results in
+    a "catastrophic" loss of precision:
+
+    >>> np.exp(7.5e-13) - 1
+    7.5006667543675576e-13
+
     """)
 
 add_newdoc("scipy.special", "expn",
@@ -2226,23 +2385,48 @@ add_newdoc("scipy.special", "exprel",
     r"""
     exprel(x)
 
-    Relative error exponential, (exp(x)-1)/x, for use when `x` is near zero.
+    Relative error exponential, ``(exp(x) - 1)/x``.
+
+    When `x` is near zero, ``exp(x)`` is near 1, so the numerical calculation
+    of ``exp(x) - 1`` can suffer from catastrophic loss of precision.
+    ``exprel(x)`` is implemented to avoid the loss of precision that occurs when
+    `x` is near zero.
 
     Parameters
     ----------
     x : ndarray
-        Input array.
+        Input array.  `x` must contain real numbers.
 
     Returns
     -------
-    res : ndarray
-        Output array.
+    float
+        ``(exp(x) - 1)/x``, computed element-wise.
 
     See Also
     --------
     expm1
 
+    Notes
+    -----
     .. versionadded:: 0.17.0
+
+    Examples
+    --------
+    >>> from scipy.special import exprel
+
+    >>> exprel(0.01)
+    1.0050167084168056
+    >>> exprel([-0.25, -0.1, 0, 0.1, 0.25])
+    array([ 0.88479687,  0.95162582,  1.        ,  1.05170918,  1.13610167])
+
+    Compare ``exprel(5e-9)`` to the naive calculation.  The exact value
+    is ``1.00000000250000000416...``.
+
+    >>> exprel(5e-9)
+    1.0000000025
+
+    >>> (np.exp(5e-9) - 1)/5e-9
+    0.99999999392252903
     """)
 
 add_newdoc("scipy.special", "fdtr",
@@ -2430,10 +2614,14 @@ add_newdoc("scipy.special", "fresnel",
     """)
 
 add_newdoc("scipy.special", "gamma",
-    """
+    r"""
     gamma(z)
 
     Gamma function.
+
+    .. math::
+
+          \Gamma(z) = \int_0^\infty x^{z-1} e^{-x} dx = (z - 1)!
 
     The gamma function is often referred to as the generalized
     factorial since ``z*gamma(z) = gamma(z+1)`` and ``gamma(n+1) =
@@ -4967,10 +5155,10 @@ add_newdoc("scipy.special", "ncfdtr",
 
     See Also
     --------
-    ncdfdtri : Inverse CDF (iCDF) of the non-central F distribution.
-    ncdfdtridfd : Calculate dfd, given CDF and iCDF values.
-    ncdfdtridfn : Calculate dfn, given CDF and iCDF values.
-    ncdfdtrinc : Calculate noncentrality parameter, given CDF, iCDF, dfn, dfd.
+    ncfdtri : Quantile function; inverse of `ncfdtr` with respect to `f`.
+    ncfdtridfd : Inverse of `ncfdtr` with respect to `dfd`.
+    ncfdtridfn : Inverse of `ncfdtr` with respect to `dfn`.
+    ncfdtrinc : Inverse of `ncfdtr` with respect to `nc`.
 
     Notes
     -----
@@ -5024,21 +5212,86 @@ add_newdoc("scipy.special", "ncfdtr",
 
 add_newdoc("scipy.special", "ncfdtri",
     """
-    ncfdtri(p, dfn, dfd, nc)
+    ncfdtri(dfn, dfd, nc, p)
 
-    Inverse cumulative distribution function of the non-central F distribution.
+    Inverse with respect to `f` of the CDF of the non-central F distribution.
 
     See `ncfdtr` for more details.
+
+    Parameters
+    ----------
+    dfn : array_like
+        Degrees of freedom of the numerator sum of squares.  Range (0, inf).
+    dfd : array_like
+        Degrees of freedom of the denominator sum of squares.  Range (0, inf).
+    nc : array_like
+        Noncentrality parameter.  Should be in range (0, 1e4).
+    p : array_like
+        Value of the cumulative distribution function.  Must be in the
+        range [0, 1].
+
+    Returns
+    -------
+    f : float
+        Quantiles, i.e. the upper limit of integration.
+
+    See Also
+    --------
+    ncfdtr : CDF of the non-central F distribution.
+    ncfdtridfd : Inverse of `ncfdtr` with respect to `dfd`.
+    ncfdtridfn : Inverse of `ncfdtr` with respect to `dfn`.
+    ncfdtrinc : Inverse of `ncfdtr` with respect to `nc`.
+
+    Examples
+    --------
+    >>> from scipy.special import ncfdtr, ncfdtri
+
+    Compute the CDF for several values of `f`:
+
+    >>> f = [0.5, 1, 1.5]
+    >>> p = ncfdtr(2, 3, 1.5, f)
+    >>> p
+    array([ 0.20782291,  0.36107392,  0.47345752])
+
+    Compute the inverse.  We recover the values of `f`, as expected:
+
+    >>> ncfdtri(2, 3, 1.5, p)
+    array([ 0.5,  1. ,  1.5])
 
     """)
 
 add_newdoc("scipy.special", "ncfdtridfd",
     """
-    ncfdtridfd(p, f, dfn, nc)
+    ncfdtridfd(dfn, p, nc, f)
 
     Calculate degrees of freedom (denominator) for the noncentral F-distribution.
 
+    This is the inverse with respect to `dfd` of `ncfdtr`.
     See `ncfdtr` for more details.
+
+    Parameters
+    ----------
+    dfn : array_like
+        Degrees of freedom of the numerator sum of squares.  Range (0, inf).
+    p : array_like
+        Value of the cumulative distribution function.  Must be in the
+        range [0, 1].
+    nc : array_like
+        Noncentrality parameter.  Should be in range (0, 1e4).
+    f : array_like
+        Quantiles, i.e. the upper limit of integration.
+
+    Returns
+    -------
+    dfd : float
+        Degrees of freedom of the denominator sum of squares.
+
+    See Also
+    --------
+    ncfdtr : CDF of the non-central F distribution.
+    ncfdtri : Quantile function; inverse of `ncfdtr` with respect to `f`.
+    ncfdtridfn : Inverse of `ncfdtr` with respect to `dfn`.
+    ncfdtrinc : Inverse of `ncfdtr` with respect to `nc`.
 
     Notes
     -----
@@ -5046,16 +5299,57 @@ add_newdoc("scipy.special", "ncfdtridfd",
     monotone in either degrees of freedom.  There thus may be two values that
     provide a given CDF value.  This routine assumes monotonicity and will
     find an arbitrary one of the two values.
+
+    Examples
+    --------
+    >>> from scipy.special import ncfdtr, ncfdtridfd
+
+    Compute the CDF for several values of `dfd`:
+
+    >>> dfd = [1, 2, 3]
+    >>> p = ncfdtr(2, dfd, 0.25, 15)
+    >>> p
+    array([ 0.8097138 ,  0.93020416,  0.96787852])
+
+    Compute the inverse.  We recover the values of `dfd`, as expected:
+
+    >>> ncfdtridfd(2, p, 0.25, 15)
+    array([ 1.,  2.,  3.])
 
     """)
 
 add_newdoc("scipy.special", "ncfdtridfn",
     """
-    ncfdtridfn(p, f, dfd, nc)
+    ncfdtridfn(p, dfd, nc, f)
 
     Calculate degrees of freedom (numerator) for the noncentral F-distribution.
 
+    This is the inverse with respect to `dfn` of `ncfdtr`.
     See `ncfdtr` for more details.
+
+    Parameters
+    ----------
+    p : array_like
+        Value of the cumulative distribution function.  Must be in the
+        range [0, 1].
+    dfd : array_like
+        Degrees of freedom of the denominator sum of squares.  Range (0, inf).
+    nc : array_like
+        Noncentrality parameter.  Should be in range (0, 1e4).
+    f : float
+        Quantiles, i.e. the upper limit of integration.
+
+    Returns
+    -------
+    dfn : float
+        Degrees of freedom of the numerator sum of squares.
+
+    See Also
+    --------
+    ncfdtr : CDF of the non-central F distribution.
+    ncfdtri : Quantile function; inverse of `ncfdtr` with respect to `f`.
+    ncfdtridfd : Inverse of `ncfdtr` with respect to `dfd`.
+    ncfdtrinc : Inverse of `ncfdtr` with respect to `nc`.
 
     Notes
     -----
@@ -5064,15 +5358,72 @@ add_newdoc("scipy.special", "ncfdtridfn",
     provide a given CDF value.  This routine assumes monotonicity and will
     find an arbitrary one of the two values.
 
+    Examples
+    --------
+    >>> from scipy.special import ncfdtr, ncfdtridfn
+
+    Compute the CDF for several values of `dfn`:
+
+    >>> dfn = [1, 2, 3]
+    >>> p = ncfdtr(dfn, 2, 0.25, 15)
+    >>> p
+    array([ 0.92562363,  0.93020416,  0.93188394])
+
+    Compute the inverse.  We recover the values of `dfn`, as expected:
+
+    >>> ncfdtridfn(p, 2, 0.25, 15)
+    array([ 1.,  2.,  3.])
+
     """)
 
 add_newdoc("scipy.special", "ncfdtrinc",
     """
-    ncfdtrinc(p, f, dfn, dfd)
+    ncfdtrinc(dfn, dfd, p, f)
 
     Calculate non-centrality parameter for non-central F distribution.
 
+    This is the inverse with respect to `nc` of `ncfdtr`.
     See `ncfdtr` for more details.
+
+    Parameters
+    ----------
+    dfn : array_like
+        Degrees of freedom of the numerator sum of squares.  Range (0, inf).
+    dfd : array_like
+        Degrees of freedom of the denominator sum of squares.  Range (0, inf).
+    p : array_like
+        Value of the cumulative distribution function.  Must be in the
+        range [0, 1].
+    f : array_like
+        Quantiles, i.e. the upper limit of integration.
+
+    Returns
+    -------
+    nc : float
+        Noncentrality parameter.
+
+    See Also
+    --------
+    ncfdtr : CDF of the non-central F distribution.
+    ncfdtri : Quantile function; inverse of `ncfdtr` with respect to `f`.
+    ncfdtridfd : Inverse of `ncfdtr` with respect to `dfd`.
+    ncfdtridfn : Inverse of `ncfdtr` with respect to `dfn`.
+
+    Examples
+    --------
+    >>> from scipy.special import ncfdtr, ncfdtrinc
+
+    Compute the CDF for several values of `nc`:
+
+    >>> nc = [0.5, 1.5, 2.0]
+    >>> p = ncfdtr(2, 3, nc, 15)
+    >>> p
+    array([ 0.96309246,  0.94327955,  0.93304098])
+
+    Compute the inverse.  We recover the values of `nc`, as expected:
+
+    >>> ncfdtrinc(2, 3, p, 15)
+    array([ 0.5,  1.5,  2. ])
 
     """)
 
@@ -5550,18 +5901,34 @@ add_newdoc("scipy.special", "pdtrik",
     """)
 
 add_newdoc("scipy.special", "poch",
-    """
+    r"""
     poch(z, m)
 
     Rising factorial (z)_m
 
-    The Pochhammer symbol (rising factorial), is defined as::
+    The Pochhammer symbol (rising factorial), is defined as
 
-        (z)_m = gamma(z + m) / gamma(z)
+    .. math::
 
-    For positive integer `m` it reads::
+        (z)_m = \frac{\Gamma(z + m)}{\Gamma(z)}
 
-        (z)_m = z * (z + 1) * ... * (z + m - 1)
+    For positive integer `m` it reads
+
+    .. math::
+
+        (z)_m = z (z + 1) ... (z + m - 1)
+
+    Parameters
+    ----------
+    z : array_like
+        (int or float)
+    m : array_like
+        (int or float)
+
+    Returns
+    -------
+    poch : ndarray
+        The value of the function.
     """)
 
 add_newdoc("scipy.special", "pro_ang1",

@@ -4,8 +4,10 @@ import sys
 import math
 import numpy as np
 from numpy import sqrt, cos, sin, arctan, exp, log, pi, Inf
-from numpy.testing import (assert_, TestCase, run_module_suite, dec,
+from numpy.testing import (assert_,
         assert_allclose, assert_array_less, assert_almost_equal, assert_raises)
+import pytest
+
 from scipy.integrate import quad, dblquad, tplquad, nquad
 from scipy._lib.six import xrange
 from scipy._lib._ccallback import LowLevelCallable
@@ -24,8 +26,8 @@ def assert_quad(value_and_err, tabled_value, errTol=1.5e-8):
         assert_array_less(err, errTol)
 
 
-class TestCtypesQuad(TestCase):
-    def setUp(self):
+class TestCtypesQuad(object):
+    def setup_method(self):
         if sys.platform == 'win32':
             if sys.version_info < (3, 5):
                 files = [ctypes.util.find_msvcrt()]
@@ -59,7 +61,7 @@ class TestCtypesQuad(TestCase):
         assert_quad(quad(self.lib.cos, 0, 5), quad(math.cos, 0, 5)[0])
         assert_quad(quad(self.lib.tan, 0, 1), quad(math.tan, 0, 1)[0])
 
-    @dec.knownfailureif(True, msg="Unreliable test, see ticket 1684.")
+    @pytest.mark.xfail(reason="Unreliable test, see ticket 1684.")
     def test_improvement(self):
         import time
         start = time.time()
@@ -118,8 +120,8 @@ class TestCtypesQuad(TestCase):
                 assert_raises(ValueError, quad, func, 0, pi)
 
 
-class TestMultivariateCtypesQuad(TestCase):
-    def setUp(self):
+class TestMultivariateCtypesQuad(object):
+    def setup_method(self):
         self.lib = ctypes.CDLL(clib_test.__file__)
         restype = ctypes.c_double
         argtypes = (ctypes.c_int, ctypes.c_double)
@@ -162,7 +164,7 @@ class TestMultivariateCtypesQuad(TestCase):
         assert_(fast < 0.5*slow, (fast, slow))
 
 
-class TestQuad(TestCase):
+class TestQuad(object):
     def test_typical(self):
         # 1) Typical function with two extra arguments:
         def myfunc(x, n, z):       # Bessel function integrand
@@ -271,7 +273,7 @@ class TestQuad(TestCase):
                      2*8/3.0 * (b**4.0 - a**4.0))
 
 
-class TestNQuad(TestCase):
+class TestNQuad(object):
     def test_fixed_limits(self):
         def func1(x0, x1, x2, x3):
             val = (x0**2 + x1*x2 - x3**3 + np.sin(x0) +
@@ -407,6 +409,3 @@ class TestNQuad(TestCase):
         except(TypeError):
             assert False
 
-
-if __name__ == "__main__":
-    run_module_suite()

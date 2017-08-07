@@ -32,7 +32,16 @@
 #ifndef NI_SUPPORT_H
 #define NI_SUPPORT_H
 
+/*
+ * The NO_ARRAY_IMPORT tells numpy that the compilation unit will reuse
+ * the numpy API initialized in another compilation unit. The compilation
+ * unit that initializes the shared numpy API by calling import_array()
+ * must bypass this by explicitly including nd_image.h before ni_support.h.
+ */
+#define NO_IMPORT_ARRAY
 #include "nd_image.h"
+#undef NO_IMPORT_ARRAY
+
 #include <stdlib.h>
 #include <float.h>
 #include <limits.h>
@@ -54,26 +63,6 @@ typedef enum {
 
 
 /******************************************************************/
-/* Data types */
-/******************************************************************/
-
-/*
- * Numpy basic types codes correspond to C basic types, but they remain
- * different even if the corresponding types have the same size.
- *
- * Most commonly: int and long, so normalize to long.
- */
-static NPY_INLINE
-int NI_NormalizeType(int type_num)
-{
-#if NPY_SIZEOF_INT == NPY_SIZEOF_LONG
-    if (type_num == NPY_INT)  type_num = NPY_LONG;
-    if (type_num == NPY_UINT) type_num = NPY_ULONG;
-#endif
-    return type_num;
-}
-
-/******************************************************************/
 /* Iterators */
 /******************************************************************/
 
@@ -90,7 +79,7 @@ typedef struct {
 int NI_InitPointIterator(PyArrayObject*, NI_Iterator*);
 
 /* initialize iterations over an arbritrary sub-space: */
-int NI_SubspaceIterator(NI_Iterator*, UInt32);
+int NI_SubspaceIterator(NI_Iterator*, npy_uint32);
 
 /* initialize iteration over array lines: */
 int NI_LineIterator(NI_Iterator*, int);
@@ -177,7 +166,7 @@ typedef struct {
     npy_intp size1, size2, array_lines, next_line;
     NI_Iterator iterator;
     char* array_data;
-    NumarrayType array_type;
+    enum NPY_TYPES array_type;
     NI_ExtendMode extend_mode;
     double extend_value;
 } NI_LineBuffer;
@@ -219,7 +208,7 @@ int NI_InitFilterIterator(int, npy_intp*, npy_intp, npy_intp*,
 
 /* Calculate the offsets to the filter points, for all border regions and
      the interior of the array: */
-int NI_InitFilterOffsets(PyArrayObject*, Bool*, npy_intp*,
+int NI_InitFilterOffsets(PyArrayObject*, npy_bool*, npy_intp*,
                          npy_intp*, NI_ExtendMode, npy_intp**,
                          npy_intp*, npy_intp**);
 
